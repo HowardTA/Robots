@@ -8,6 +8,8 @@ function Start-Robots
 		[int]$RobotsPerLevel = 5,
 		[int]$TasersPerLevel = 5,
 		[int]$LasersPerLevel = 2,
+        [switch]$NoBanner,
+        [switch]$NoScoreboard,
 		[switch]$Quiet
 	)
 
@@ -772,6 +774,41 @@ Objective:
     		Write-Host $Message -ForegroundColor $Color -NoNewline
         }
 	}
+
+    function Display-Scoreboard()
+    {
+        if ($NoScoreboard) { return }
+
+        [string]$sScoreBoard = $script:sScoreBoard -f ( 
+            $script:oGameScope.Lives, 
+            $(if ($script:bLaserMode) {"+"} else {" "}), # Laser indicator
+            $script:oGameScope.LasersLeft, # Lasers left
+            $script:oGameScope.Score,
+            ($script:oRobots| Where IsActive -eq $true).Count,
+            $(if (-not $script:bLaserMode) {"o"} else {" "}), # Taser indicator
+            $script:oGameScope.TasersLeft, # Tasers left
+            $script:iHighScore,
+            $script:oGameScope.Level
+        )
+
+		[int]$iIndex = 0
+		ForEach($sLine in ($sScoreBoard -Split [Environment]::NewLine))
+		{
+			Display-Message -Message $sLine -Color Green -NoBox -X (-1) -Y ($script:iHeight - 3 + $iIndex) -NoNewLine
+			$iIndex++
+		}
+
+        <#
+            Lives
+            TaserLaser $true
+            Laser Bullets
+            Score
+            Robots
+            TaserLaser $false
+            Taser Charges
+            HighScore
+        #>
+    }
 	
 	function Set-ConsolePosition([int]$X, [int]$Y)
 	{ 
@@ -901,39 +938,6 @@ Objective:
         $script:oGameScope.Score = 0
     }
 
-    function Display-Scoreboard()
-    {
-        [string]$sScoreBoard = $script:sScoreBoard -f ( 
-            $script:oGameScope.Lives, 
-            $(if ($script:bLaserMode) {"+"} else {" "}), # Laser indicator
-            $script:oGameScope.LasersLeft, # Lasers left
-            $script:oGameScope.Score,
-            ($script:oRobots| Where IsActive -eq $true).Count,
-            $(if (-not $script:bLaserMode) {"o"} else {" "}), # Taser indicator
-            $script:oGameScope.TasersLeft, # Tasers left
-            $script:iHighScore,
-            $script:oGameScope.Level
-        )
-
-		[int]$iIndex = 0
-		ForEach($sLine in ($sScoreBoard -Split [Environment]::NewLine))
-		{
-			Display-Message -Message $sLine -Color Green -NoBox -X (-1) -Y ($script:iHeight - 3 + $iIndex) -NoNewLine
-			$iIndex++
-		}
-
-        <#
-            Lives
-            TaserLaser $true
-            Laser Bullets
-            Score
-            Robots
-            TaserLaser $false
-            Taser Charges
-            HighScore
-        #>
-    }
-
 	function Get-Response([string]$Prompt, [string[]]$Options, [string]$Default)
 	{
 		$host.UI.RawUI.FlushInputBuffer()
@@ -965,20 +969,23 @@ Objective:
             ###### Instruction/Intro Page
             ###
 
-			Play-Sound $script:sStartSong
+            if (-not $NoBanner)
+            {
+			    Play-Sound $script:sStartSong
 
-			### Put a space in the lower left corner scroll everything off the screen
-			Set-ConsolePosition 0 $script:iHeight
-			Scroll-Text ([Environment]::NewLine * $script:iHeight)
-			Clear-Host
-			Set-ConsolePosition 0 $script:iHeight
+			    ### Put a space in the lower left corner scroll everything off the screen
+			    Set-ConsolePosition 0 $script:iHeight
+			    Scroll-Text ([Environment]::NewLine * $script:iHeight)
+			    Clear-Host
+			    Set-ConsolePosition 0 $script:iHeight
 			
-			[int]$iBannerWidth = ($sBanner -Split "`n" | % { $_.Length } | Measure -Maximum).Maximum
-			Scroll-Text -Indent (($script:iWidth / 2) - ($iBannerWidth / 2)) -Colors "Red", "Red", "Cyan", "White", "Cyan" -Text $sBanner
+			    [int]$iBannerWidth = ($sBanner -Split "`n" | % { $_.Length } | Measure -Maximum).Maximum
+			    Scroll-Text -Indent (($script:iWidth / 2) - ($iBannerWidth / 2)) -Colors "Red", "Red", "Cyan", "White", "Cyan" -Text $sBanner
 
-			$iBannerWidth = ($sInstructions -Split "`n" | % { $_.Length } | Measure -Maximum).Maximum
-			Scroll-Text  -Indent (($script:iWidth / 2) - ($iBannerWidth / 2)) -Text $sInstructions
-			Scroll-Text ([Environment]::NewLine)
+			    $iBannerWidth = ($sInstructions -Split "`n" | % { $_.Length } | Measure -Maximum).Maximum
+			    Scroll-Text  -Indent (($script:iWidth / 2) - ($iBannerWidth / 2)) -Text $sInstructions
+			    Scroll-Text ([Environment]::NewLine)
+            }
 
 			Write-Host ("- " * (($script:iWidth / 2) - 1)) -NoNewline -ForegroundColor DarkGreen
             $sKey = Get-Response -Prompt "Play with sound? (y/n/r/q):" -Options "y","n","r","q" -Default "y"
