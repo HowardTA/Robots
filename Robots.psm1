@@ -28,6 +28,7 @@ function Start-Robots
         HighScore = 0;
         TasersLeft = 0;
         LasersLeft = 0;
+        LaserMode = $false;
         WaitTillEnd = $false;
     }
 	
@@ -116,12 +117,11 @@ function Start-Robots
 	[int]$script:iDemobilizeFor = 10
 	[int]$script:iMaxFlyCount = 20
 
-	[object]$script:oCharacter = $null
 	[object]$script:oRobots = New-Object System.Collections.Arraylist
-	[object]$script:oTasers = New-Object System.Collections.Arraylist
-	[object]$script:oBullets = New-Object System.Collections.Arraylist
-	[object]$script:oTreasures = New-Object System.Collections.Arraylist
 	[object]$script:oSavedRobots = New-Object System.Collections.Arraylist
+	[object]$script:oTasers = New-Object System.Collections.Arraylist
+
+	[object]$script:oCharacter = $null
 	[object]$script:oSavedCharacter = $null
 
 	[array]$script:oMoveKeys = @("w", "e", "d", "c", "x", "z", "a", "q", "s")
@@ -141,8 +141,6 @@ function Start-Robots
 	[string]$script:sHitSound = Get-Sound(99)
 	[string]$script:sExitSound = Get-Sound(20)
 	
-	[bool]$script:bSoundOn = $true
-
 	[string]$sBanner = `
 "RRRRR    OOOO   BBBBB    OOOO   TTTTTT  SSSS 
 RR  RR  OO  OO  BB  BB  OO  OO    TT   SS  SS
@@ -186,16 +184,13 @@ Objective:
 /    Lives> {0,3:D3}    Laser Bullets({1})> {2,3:D3}        Score> {3,8:D8}   \
 /    Robots> {4,3:D3}    Taser Charges({5})> {6,3:D3}    HighScore> {7,8:D8}    \";
 
-    [int]$script:iScoreBoardHeight = 3
-
+    [int]$script:iScoreBoardHeight = ($script:sScoreBoard.Split([Environment]::NewLine).Length - 2)
     [int]$script:iHighScore = 0
-    [bool]$script:bLaserMode = $false
-	[int]$script:iTasersShot = 0
+
 	[int]$script:iReplayMove = 0
 	[int]$script:iReplayWarp = 0
 	[int]$script:iReplaySpeed = 75
 	[bool]$script:bReplayMode = $false
-	[object]$script:oReplayMoves = New-Object System.Collections.Arraylist
 	[object]$script:oReplayMoves = New-Object System.Collections.Arraylist
 	[object]$script:oReplayWarps = New-Object System.Collections.Arraylist
 
@@ -323,7 +318,7 @@ Objective:
 		[string]$sSound = ""	
         <# IS CHANGE GUNS KEY #> if ($oKey.VirtualKeyCode -eq 9)
         {
-            $script:bLaserMode = -not $script:bLaserMode
+            $script:oGameScope.LaserMode = -not $script:oGameScope.LaserMode
             Display-Scoreboard
         } 
         <# WARP OR SHOOT OR MOVE #> else 
@@ -349,7 +344,7 @@ Objective:
 		    {
 			    <# IS SHOOT KEY #> if ($script:oShootKeys -contains $oKey.Character)
 			    {
-                    <# DO SHOOT LASER #> if ($script:bLaserMode)
+                    <# DO SHOOT LASER #> if ($script:oGameScope.LaserMode)
                     {
 				        <# SHOOT IF BULLETS LEFT #> if ($script:oGameScope.LasersLeft -gt 0 -and (Shoot-Laser -Direction $oKey.Character))
 				        {				
@@ -781,11 +776,11 @@ Objective:
 
         [string]$sScoreBoard = $script:sScoreBoard -f ( 
             $script:oGameScope.Lives, 
-            $(if ($script:bLaserMode) {"+"} else {" "}), # Laser indicator
+            $(if ($script:oGameScope.LaserMode) {"+"} else {" "}), # Laser indicator
             $script:oGameScope.LasersLeft, # Lasers left
             $script:oGameScope.Score,
             ($script:oRobots| Where IsActive -eq $true).Count,
-            $(if (-not $script:bLaserMode) {"o"} else {" "}), # Taser indicator
+            $(if (-not $script:oGameScope.LaserMode) {"o"} else {" "}), # Taser indicator
             $script:oGameScope.TasersLeft, # Tasers left
             $script:iHighScore,
             $script:oGameScope.Level
@@ -842,24 +837,30 @@ Objective:
 	
 	function Start-BGSong()
 	{
-		"" | Out-File ("{0}\.playsong" -f $WorkingDirectory)
+        if (-not $Quiet) 
+        {
+		    "" | Out-File ("{0}\.playsong" -f $WorkingDirectory)
 		
-		$oDummy = Start-Job -ArgumentList $WorkingDirectory `
-			-ScriptBlock {
-				param([string]$WorkingDirectory)
-				[object]$oSongPlayer = New-Object System.Media.SoundPlayer
-				[int]$iSongNumber = Get-Random -Maximum 7 -Minimum 1
-				$oSongPlayer.SoundLocation = "{0}\song_wmpaud{1}.wav" -f $WorkingDirectory, $iSongNumber
-				$oSongPlayer.PlayLooping()
-				While (Test-Path ("{0}\.playsong" -f $WorkingDirectory)) { Sleep 1 }
-				$oSongPlayer.Stop()
+		    $oDummy = Start-Job -ArgumentList $WorkingDirectory `
+			    -ScriptBlock {
+				    param([string]$WorkingDirectory)
+				    [object]$oSongPlayer = New-Object System.Media.SoundPlayer
+				    [int]$iSongNumber = Get-Random -Maximum 7 -Minimum 1
+				    $oSongPlayer.SoundLocation = "{0}\song_wmpaud{1}.wav" -f $WorkingDirectory, $iSongNumber
+				    $oSongPlayer.PlayLooping()
+				    While (Test-Path ("{0}\.playsong" -f $WorkingDirectory)) { Sleep 1 }
+				    $oSongPlayer.Stop()
 
-			}
+			    }
+        }
 	}
 	
 	function Stop-BGSong()
 	{
-		Remove-Item ("{0}\.playsong" -f $WorkingDirectory) -Force -EA SilentlyContinue | Out-Null
+        if (-not $Quiet) 
+        { 
+            Remove-Item ("{0}\.playsong" -f $WorkingDirectory) -Force -EA SilentlyContinue | Out-Null
+        }
 	}
 
     #endregion
@@ -974,16 +975,15 @@ Objective:
 			    Play-Sound $script:sStartSong
 
 			    ### Put a space in the lower left corner scroll everything off the screen
-			    Set-ConsolePosition 0 $script:iHeight
 			    Scroll-Text ([Environment]::NewLine * $script:iHeight)
-			    Clear-Host
-			    Set-ConsolePosition 0 $script:iHeight
-			
-			    [int]$iBannerWidth = ($sBanner -Split "`n" | % { $_.Length } | Measure -Maximum).Maximum
-			    Scroll-Text -Indent (($script:iWidth / 2) - ($iBannerWidth / 2)) -Colors "Red", "Red", "Cyan", "White", "Cyan" -Text $sBanner
 
-			    $iBannerWidth = ($sInstructions -Split "`n" | % { $_.Length } | Measure -Maximum).Maximum
-			    Scroll-Text  -Indent (($script:iWidth / 2) - ($iBannerWidth / 2)) -Text $sInstructions
+    			[int]$iBannerWidth = ($sBanner -Split [Environment]::NewLine | % { $_.Length } | Measure -Maximum).Maximum
+                [int]$iIndent = (($script:iWidth / 2) - ($iBannerWidth / 2))
+	    		Scroll-Text -Indent $iIndent -Colors "Red", "Red", "Cyan", "White", "Cyan" -Text $sBanner
+
+			    [int]$iInstructionsWidth = ($sInstructions -Split [Environment]::NewLine | % { $_.Length } | Measure -Maximum).Maximum
+                [int]$iIndent = (($script:iWidth / 2) - ($iInstructionsWidth / 2))
+			    Scroll-Text -Indent $iIndent -Text $sInstructions
 			    Scroll-Text ([Environment]::NewLine)
             }
 
@@ -993,7 +993,8 @@ Objective:
 
 			$script:bReplayMode = ($sKey -eq "r")
 			$Quiet = -not ($sKey -eq "y")
-			if ($Quiet) { $script:oSound.Stop() }
+
+			$script:oSound.Stop();
 
             ###
             ###### Game
@@ -1009,7 +1010,7 @@ Objective:
                 Start-Sleep -Seconds 2
 				Clear-Host
                 
-				if (-not $Quiet) { Play-Sound $script:sStartSound }
+				Play-Sound $script:sStartSound
 
 				if ($script:bReplayMode)
 				{
@@ -1034,7 +1035,7 @@ Objective:
                 Display-Scoreboard
 				Draw-All
 
-				if (-not $Quiet) { Start-BGSong }
+				Start-BGSong
 	
                 ###
                 ###### Game Loop
@@ -1050,7 +1051,7 @@ Objective:
 					Draw-All
 				}
 
-				if (-not $Quiet) { Stop-BGSong }
+				Stop-BGSong
 				Set-ConsolePosition -X 1 -Y 0
 
                 $script:oGameScope.WaitTillEnd = $false
