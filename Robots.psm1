@@ -180,8 +180,8 @@ Objective:
                         (Esc) to exit"
 
     [string]$script:sScoreBoard = `
-" _____________________/¯¯¯¯¯ Level {8,3:D4} ¯¯¯¯¯\____________________
-/    Lives> {0,3:D3}    Laser Bullets({1})> {2,3:D3}        Score> {3,8:D8}   \
+"  _____________________/¯¯¯¯¯ Level {8,3:D4} ¯¯¯¯¯\____________________
+ /    Lives> {0,3:D3}    Laser Bullets({1})> {2,3:D3}        Score> {3,8:D8}   \
 /    Robots> {4,3:D3}    Taser Charges({5})> {6,3:D3}    HighScore> {7,8:D8}    \";
 
     [int]$script:iScoreBoardHeight = ($script:sScoreBoard.Split([Environment]::NewLine).Length - 2)
@@ -199,6 +199,14 @@ Objective:
 	######### Functions ------------------------------------------------------------ 
 
     #region *** Character manipulation functions
+
+	function Set-ConsolePosition ([int]$X, [int]$Y) 
+	{
+		[object]$oPos = $Host.UI.RawUI.CursorPosition
+		$oPos.x = $X
+		$oPos.y = $Y
+		$Host.UI.RawUI.CursorPosition = $oPos
+	}
 
 	function Create-Character()
 	{
@@ -748,7 +756,7 @@ Objective:
 	
 	function Display-Message([string]$Message, [string]$Color, [int]$X = -1, [int]$Y = -1, [switch]$NoBox, [switch]$NoNewLine)
 	{
-		if ($X -eq -1) { $X = ($script:iWidth / 2) - ($Message.Length / 2) }
+		if ($X -eq -1) { $X = ($script:iWidth / 2) - (($Message.Split([Environment]::NewLine)[0]).Length / 2) }
 		if ($Y -eq -1) { $Y = ($script:iHeight / 2) - ($Message.Split([Environment]::NewLine).Length / 2) }
 
         if (-not $NoBox)
@@ -757,16 +765,27 @@ Objective:
         }
         else
         {
-    		Set-ConsolePosition $X $(if ($Y -eq 999) { [Console]::CursorTop } else { $Y })
+            $Y = $(if ($Y -eq 999) { [Console]::CursorTop } else { $Y })
+    		Set-ConsolePosition $X $Y
         }
 
         if (-not $NoNewLine)
         {
-    		Write-Host $Message -ForegroundColor $Color
+            Write-Host $Message -ForegroundColor $Color
         } 
         else 
         {
-    		Write-Host $Message -ForegroundColor $Color -NoNewline
+            [int]$iCount = 0
+            if (($Message.Split([Environment]::NewLine).Count -gt 0))
+            {
+    		    $Message.Split([Environment]::NewLine) | % {
+                    Set-ConsolePosition $X ($Y+$iCount); Write-Host "$($_)" -ForegroundColor $Color -NoNewline; $iCount++
+                }
+            }
+            else
+            {
+    		    Write-Host $Message -ForegroundColor $Color -NoNewline
+            }
         }
 	}
 
