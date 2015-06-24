@@ -180,8 +180,8 @@ Objective:
                         (Esc) to exit"
 
     [string]$script:sScoreBoard = `
-"  _____________________/¯¯¯¯¯ Level {8,3:D4} ¯¯¯¯¯\____________________
- /    Lives> {0,3:D3}    Laser Bullets({1})> {2,3:D3}        Score> {3,8:D8}   \
+" _____________________/¯¯¯¯¯ Level {8,3:D4} ¯¯¯¯¯\____________________
+/    Lives> {0,3:D3}    Laser Bullets({1})> {2,3:D3}        Score> {3,8:D8}   \
 /    Robots> {4,3:D3}    Taser Charges({5})> {6,3:D3}    HighScore> {7,8:D8}    \";
 
     [int]$script:iScoreBoardHeight = ($script:sScoreBoard.Split([Environment]::NewLine).Length - 2)
