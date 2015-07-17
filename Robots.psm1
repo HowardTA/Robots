@@ -1025,7 +1025,7 @@ Objective:
 				$script:bExitButtonHit = $false
 				Clear-Host
 
-                Display-Message "   Level $($script:oGameScope.Level)  " -Color Red ### -X (Get-Random -Minimum 1 -Maximum ($script:iWidth - 10)) -Y (Get-Random -Minimum 1 -Maximum ($script:iHeight - 3))	
+                Display-Message "   Level $($script:oGameScope.Level)  " -Color Yellow ### -X (Get-Random -Minimum 1 -Maximum ($script:iWidth - 10)) -Y (Get-Random -Minimum 1 -Maximum ($script:iHeight - 3))	
                 Start-Sleep -Seconds 2
 				Clear-Host
                 
