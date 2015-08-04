@@ -131,7 +131,7 @@ function Start-Robots
 	[string]$script:sStartSong = Get-Sound(29)
 	[string]$script:sStartSound = Get-Sound(2)
 	[string]$script:sTaserSound = Get-Sound(10)
-	[string]$script:sLaserSound = Get-Sound(24)
+	[string]$script:sLaserSound = Get-Sound(16)
 	[string]$script:sWarpSound = Get-Sound(8)
 	[string]$script:sMoveSound = Get-Sound(27)
 	[string]$script:sEmptySound = Get-Sound(101)
