@@ -111,6 +111,16 @@ function Start-Robots
 		IsActive = $false;
 	}
 
+    [object]$script:oVerticalTemplate = @{
+        Color = "Red";
+        Sprite = ([char]0x2551); #([char]0x2588); #([char]0x2592);
+    }
+
+    [object]$script:oHorizontalTemplate = @{
+        Color = "Red";
+        Sprite = ([char]0x2551); #([char]0x2588); #([char]0x2592);
+    }
+
     [int]$script:iDefaultRobots = $RobotsPerLevel
 	[bool]$script:bExitButtonHit = $false
 
